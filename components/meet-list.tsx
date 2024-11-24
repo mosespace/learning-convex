@@ -4,46 +4,53 @@ import { useState } from 'react';
 import { MeetCard } from '@/components/meet-card';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { Card, CardContent, CardFooter, CardHeader } from './ui/card';
+import { Skeleton } from './ui/skeleton';
+import getUserId from '@/utils/getOrCreateuserId';
 
-// Mock data for demonstration
-const mockMeets = [
-  {
-    id: 1,
-    title: 'Weekly Standup',
-    description:
-      'Join our weekly team sync to discuss progress and upcoming tasks.',
-    dateTime: '2023-05-15T10:00:00Z',
-    link: 'https://meet.google.com/abc-defg-hij',
-    attendees: 32,
-    rating: 4.8,
-    totalRatings: 127,
-  },
-  {
-    id: 2,
-    title: 'Product Demo',
-    description: 'Live demonstration of our latest features and improvements.',
-    dateTime: '2023-05-16T14:00:00Z',
-    link: 'https://meet.google.com/klm-nopq-rst',
-    attendees: 15,
-    rating: 4.5,
-    totalRatings: 89,
-  },
-  {
-    id: 3,
-    title: 'Tech Talk',
-    description: 'Learn about the latest developments in web technologies.',
-    dateTime: '2023-05-17T11:00:00Z',
-    link: 'https://meet.google.com/uvw-xyza-bcd',
-    attendees: 50,
-    rating: 4.9,
-    totalRatings: 203,
-  },
-];
+function MeetListSkeleton() {
+  return (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {[1, 2, 3].map((i) => (
+        <Card key={i}>
+          <CardHeader>
+            <Skeleton className="h-6 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-20 w-full" />
+          </CardContent>
+          <CardFooter className="flex justify-between">
+            <Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-8 w-24" />
+          </CardFooter>
+        </Card>
+      ))}
+    </div>
+  );
+}
 
 export function MeetList() {
   const [searchTerm, setSearchTerm] = useState('');
+  const meets = useQuery(api.meets.getMeets);
 
-  const filteredMeets = mockMeets.filter(
+  if (meets === undefined) {
+    return <MeetListSkeleton />;
+  }
+
+  if (meets.length === 0) {
+    return (
+      <div className="text-center py-10">
+        <p className="text-muted-foreground">No meetings scheduled yet.</p>
+      </div>
+    );
+  }
+
+  const userId = getUserId();
+
+  const filteredMeets = meets.filter(
     (meet) =>
       meet.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       meet.description.toLowerCase().includes(searchTerm.toLowerCase()),
@@ -63,7 +70,7 @@ export function MeetList() {
       </div>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3s">
         {filteredMeets.map((meet) => (
-          <MeetCard key={meet.id} meet={meet} />
+          <MeetCard key={meet._id} meet={meet as any} userId={userId} />
         ))}
       </div>
     </div>

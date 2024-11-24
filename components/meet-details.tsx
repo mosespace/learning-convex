@@ -11,14 +11,14 @@ import { Calendar, Clock, Users, Star, LinkIcon } from 'lucide-react';
 
 interface MeetDetailsProps {
   meet: {
-    id: number;
+    _id: any;
     title: string;
     description: string;
     dateTime: string;
     link: string;
-    attendees: number;
-    rating: number;
-    totalRatings: number;
+    attendees?: number;
+    rating?: number;
+    totalRatings?: number;
   };
   isOpen: boolean;
   onClose: () => void;

@@ -14,7 +14,8 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 
-export default function Page() {
+export default async function Page() {
+  // const mockMeets = await getMeets()
   return (
     <SidebarProvider>
       <AppSidebar />

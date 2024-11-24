@@ -1,23 +1,41 @@
-import { useState } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, Star, Users } from 'lucide-react';
+'use client';
+
 import { MeetDetails } from '@/components/meet-details';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { api } from '@/convex/_generated/api';
+import { useToast } from '@/hooks/use-toast';
+import { useMutation } from 'convex/react';
+import { Star, Trash2, Users } from 'lucide-react';
+import { useState } from 'react';
 
 interface Meet {
-  id: number;
+  _id: any;
   title: string;
   description: string;
   dateTime: string;
   link: string;
-  attendees: number;
-  rating: number;
-  totalRatings: number;
+  attendees?: number;
+  rating?: number;
+  totalRatings?: number;
+  userId: string;
 }
 
 interface MeetCardProps {
   meet: Meet;
+  userId: any;
 }
 
 const bgColors = [
@@ -31,12 +49,26 @@ const bgColors = [
   'bg-teal-100',
 ];
 
-function getRandomBgColor(id: number): string {
-  return bgColors[id % bgColors.length];
+function hashString(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return Math.abs(hash);
 }
 
-export function MeetCard({ meet }: MeetCardProps) {
+function getRandomBgColor(id: string): string {
+  const hash = hashString(id);
+  return bgColors[hash % bgColors.length];
+}
+
+export function MeetCard({ meet, userId }: MeetCardProps) {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const { toast } = useToast();
+  const deleteMeet = useMutation(api.meets.deleteMeet);
+
   const date = new Date(meet.dateTime);
   const formattedDate = date.toLocaleDateString('en-US', {
     month: 'short',
@@ -47,11 +79,31 @@ export function MeetCard({ meet }: MeetCardProps) {
     minute: '2-digit',
   });
 
+  const meetId = meet._id;
+
+  const handleDelete = async () => {
+    try {
+      await deleteMeet({ meetId, userId });
+
+      toast({
+        title: 'Meet deleted',
+        description: 'The meet has been successfully deleted.',
+      });
+    } catch (error) {
+      console.log(error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete the meet. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <Card className="overflow-hidden">
       <div
         className={`${getRandomBgColor(
-          meet.id,
+          meet._id,
         )} p-8 flex items-center justify-center`}
       >
         <h3 className="text-xl text-center font-bold uppercase">
@@ -78,19 +130,23 @@ export function MeetCard({ meet }: MeetCardProps) {
             </div>
             <div className="flex items-center justify-center gap-1 text-gray-600">
               <span className="text-lg font-semibold">{meet.rating}</span>
-              <div className="flex items-center">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`w-4 h-4 ${
-                      i < Math.floor(meet.rating)
-                        ? 'text-yellow-400 fill-current'
-                        : 'text-gray-300'
-                    }`}
-                  />
-                ))}
-              </div>
-              <span className="text-gray-400">({meet.totalRatings})</span>
+              {meet.rating && (
+                <div className="flex items-center">
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`w-4 h-4 ${
+                        i < Math.floor(meet?.rating as any)
+                          ? 'text-yellow-400 fill-current'
+                          : 'text-gray-300'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+              {meet.totalRatings && (
+                <span className="text-gray-400">({meet.totalRatings})</span>
+              )}
             </div>
           </div>
           <p className="text-gray-600 line-clamp-3 mt-4">{meet.description}</p>
@@ -109,6 +165,36 @@ export function MeetCard({ meet }: MeetCardProps) {
           >
             View Details
           </Button>
+          {userId && userId === meet.userId && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  aria-label="Delete meet"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    Are you sure you want to delete this meet?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete
+                    the meet and remove it from our servers.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>No</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete}>
+                    Yes
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
       </div>
       <MeetDetails

@@ -57,3 +57,40 @@ export const deleteMeet = mutation({
     };
   },
 });
+
+export const updateMeet = mutation({
+  args: {
+    meetId: v.id('meets'),
+    userId: v.string(), // The ID of the user attempting the update
+    updateData: v.object({
+      title: v.optional(v.string()),
+      description: v.optional(v.string()),
+      dateTime: v.optional(v.string()), // Expect ISO string
+      link: v.optional(v.string()),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const { meetId, userId, updateData } = args;
+
+    // Fetch the meet from the database
+    const meet = await ctx.db.get(meetId);
+
+    if (!meet) {
+      throw new Error('Meet not found');
+    }
+
+    // Check if the userId matches the meet creator
+    if (meet.userId !== userId) {
+      throw new Error('Not authorized to update this meet');
+    }
+
+    // Perform the update
+    const updatedMeet = await ctx.db.patch(meetId, updateData);
+
+    return {
+      success: true,
+      message: 'Meet updated successfully',
+      updatedMeet, // Return the updated meet for client use
+    };
+  },
+});

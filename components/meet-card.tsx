@@ -18,8 +18,10 @@ import { Card } from '@/components/ui/card';
 import { api } from '@/convex/_generated/api';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation } from 'convex/react';
-import { Star, Trash2, Users } from 'lucide-react';
+import { FilePenLine, Minus, Star, Trash2, Users } from 'lucide-react';
 import { useState } from 'react';
+import { Drawer, DrawerContent, DrawerTrigger } from './ui/drawer';
+import { CreateMeetForm } from './create-meet-form';
 
 interface Meet {
   _id: any;
@@ -68,6 +70,8 @@ export function MeetCard({ meet, userId }: MeetCardProps) {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const { toast } = useToast();
   const deleteMeet = useMutation(api.meets.deleteMeet);
+  const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   const date = new Date(meet.dateTime);
   const formattedDate = date.toLocaleDateString('en-US', {
@@ -166,34 +170,54 @@ export function MeetCard({ meet, userId }: MeetCardProps) {
             View Details
           </Button>
           {userId && userId === meet.userId && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  aria-label="Delete meet"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>
-                    Are you sure you want to delete this meet?
-                  </AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete
-                    the meet and remove it from our servers.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>No</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete}>
-                    Yes
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    aria-label="Delete meet"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Are you sure you want to delete this meet?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete
+                      the meet and remove it from our servers.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>No</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete}>
+                      Yes
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+
+              <Drawer>
+                <DrawerTrigger asChild>
+                  <Button variant="outline">
+                    <FilePenLine className="size-4" />
+                    {/* Update Meet */}
+                  </Button>
+                </DrawerTrigger>
+                <DrawerContent>
+                  <div className="mx-auto py-8 w-full max-w-sm">
+                    <CreateMeetForm
+                      isOpen={isCreateFormOpen}
+                      initialData={meet}
+                      onClose={() => setIsCreateFormOpen(false)}
+                    />
+                  </div>
+                </DrawerContent>
+              </Drawer>
+            </>
           )}
         </div>
       </div>

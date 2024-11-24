@@ -15,12 +15,18 @@ import getUserId from '@/utils/getOrCreateuserId';
 
 interface CreateMeetFormProps {
   isOpen: boolean;
+  initialData?: any;
   onClose: () => void;
 }
 
-export function CreateMeetForm({ isOpen, onClose }: CreateMeetFormProps) {
+export function CreateMeetForm({
+  initialData,
+  isOpen,
+  onClose,
+}: CreateMeetFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const createMeet = useMutation(api.meets.createMeet);
+  const updateMeet = useMutation(api.meets.updateMeet);
   const { toast } = useToast();
 
   const {
@@ -29,29 +35,44 @@ export function CreateMeetForm({ isOpen, onClose }: CreateMeetFormProps) {
     formState: { errors },
     reset,
   } = useForm<MeetFormData>({
+    defaultValues: initialData ? initialData : '',
     resolver: zodResolver(meetSchema),
   });
 
   const userId = getUserId();
+  const meetId = initialData?.id as any;
 
   const onSubmit = async (data: MeetFormData) => {
     try {
       setIsSubmitting(true);
-      await createMeet({
-        title: data.title,
-        description: data.description,
-        dateTime: data.dateTime,
-        link: data.link,
-        userId: userId as string,
-      });
 
-      toast({
-        title: 'Success',
-        description: 'Meet created successfully',
-      });
+      if (!initialData) {
+        await createMeet({
+          title: data.title,
+          description: data.description,
+          dateTime: data.dateTime,
+          link: data.link,
+          userId: userId as string,
+        });
+
+        toast({
+          title: 'Success',
+          description: 'Meet created successfully',
+        });
+      } else {
+        await updateMeet({
+          meetId: initialData._id,
+          updateData: data,
+          userId: userId as any,
+        });
+
+        toast({
+          title: 'Success',
+          description: 'Meet Updated successfully',
+        });
+      }
 
       reset();
-      onClose();
     } catch (error) {
       toast({
         title: 'Error',
@@ -126,7 +147,13 @@ export function CreateMeetForm({ isOpen, onClose }: CreateMeetFormProps) {
           Cancel
         </Button>
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Creating...' : 'Create Meet'}
+          {isSubmitting
+            ? initialData
+              ? 'Updating...'
+              : 'Creating...'
+            : initialData
+              ? 'Update Meet'
+              : 'Create Meet'}
         </Button>
       </div>
     </form>
